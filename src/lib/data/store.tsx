@@ -7,8 +7,13 @@ import { AREAS, levelFromXp, type AreaKey } from "../areas";
 import { addDays, addMonths, isoWeekday, monthStart, todayISO, weekStart } from "../dates";
 import { TASK_XP, type Project, type Recurrence, type Subtask, type Task, type XpEvent } from "./types";
 import { quantityOn, type Habit, type HabitLog } from "./habits";
+import { fetchAll } from "./fetchAll";
 
 type NewTask = Partial<Omit<Task, "id" | "created_at">> & { title: string };
+export type RitualKind = "plan_day" | "review_day" | "plan_week";
+export type Ritual = { id: string; kind: RitualKind; date: string; notes: string | null; completed_at: string };
+export const RITUAL_XP: Record<RitualKind, number> = { plan_day: 25, review_day: 25, plan_week: 50 };
+
 export type NewHabit = Partial<Omit<Habit, "id" | "created_at">> & { name: string };
 
 type Store = {
@@ -23,6 +28,7 @@ type Store = {
   xpEvents: XpEvent[];
   habits: Habit[];
   habitLogs: HabitLog[];
+  rituals: Ritual[];
 
   xp: {
     total: number;
@@ -48,6 +54,10 @@ type Store = {
   logHabit: (habit: Habit, opts: { date: string; slot?: string | null; value?: number | null; loggedAt?: string }) => Promise<void>;
   unlogHabit: (logId: string) => Promise<void>;
   updateLog: (logId: string, patch: Partial<Pick<HabitLog, "logged_at" | "note" | "value">>) => Promise<void>;
+
+  grantXp: (area: AreaKey, amount: number, source: string, sourceId: string) => Promise<void>;
+  revokeXp: (source: string, sourceId: string) => Promise<void>;
+  completeRitual: (kind: RitualKind, date: string, notes?: string | null) => Promise<void>;
 
   signOut: () => Promise<void>;
 };
@@ -103,6 +113,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [xpEvents, setXpEvents] = useState<XpEvent[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
+  const [rituals, setRituals] = useState<Ritual[]>([]);
 
   // ---------- Auth ----------
   useEffect(() => {
@@ -125,16 +136,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // Taskuri nefăcute + tot ce ține de ultimele ~3 luni
       const since = addMonths(monthStart(todayISO()), -2);
       const logsSince = addDays(todayISO(), -400);
-      const [t, s, p, x, h, hl] = await Promise.all([
+      const [t, s, p, x, h, hl, rt] = await Promise.all([
         supabase.from("tasks").select("*").or(`done.eq.false,period.gte.${since},period.is.null`).order("sort_order").order("created_at"),
         supabase.from("subtasks").select("*").order("sort_order"),
         supabase.from("projects").select("*").eq("archived", false).order("created_at"),
-        supabase.from("xp_events").select("id,area,amount,source,source_id,created_at"),
+        fetchAll<XpEvent>((a, b) => supabase.from("xp_events").select("id,area,amount,source,source_id,created_at").order("created_at").range(a, b)),
         supabase.from("habits").select("*").eq("archived", false).order("sort_order").order("created_at"),
-        supabase.from("habit_logs").select("id,habit_id,date,slot,logged_at,value,note").gte("date", logsSince).order("logged_at"),
+        fetchAll<HabitLog>((a, b) =>
+          supabase.from("habit_logs").select("id,habit_id,date,slot,logged_at,value,note").gte("date", logsSince).order("logged_at").order("id").range(a, b),
+        ),
+        supabase.from("rituals").select("*").gte("date", addDays(todayISO(), -60)),
       ]);
       if (cancelled) return;
-      for (const r of [t, s, p, x, h, hl]) if (fail(r.error, setError)) break;
+      for (const r of [t, s, p, x, h, hl, rt]) if (fail(r.error, setError)) break;
+      setRituals((rt.data as Ritual[]) ?? []);
       setHabits((h.data as Habit[]) ?? []);
       setHabitLogs((hl.data as HabitLog[]) ?? []);
       setTasks((t.data as Task[]) ?? []);
@@ -343,6 +358,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fail(error, setError);
   }, []);
 
+  // ---------- Ritualuri ----------
+  const completeRitual = useCallback<Store["completeRitual"]>(
+    async (kind, date, notes = null) => {
+      const { data, error } = await supabase
+        .from("rituals")
+        .upsert({ kind, date, notes, completed_at: new Date().toISOString() }, { onConflict: "user_id,kind,date" })
+        .select("*")
+        .single();
+      if (fail(error, setError)) return;
+      const r = data as Ritual;
+      setRituals((rs) => [...rs.filter((x) => !(x.kind === kind && x.date === date)), r]);
+      await grantXp(kind === "plan_week" ? "work" : "mind", RITUAL_XP[kind], "ritual", r.id);
+    },
+    [grantXp],
+  );
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setTasks([]);
@@ -351,6 +382,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setXpEvents([]);
     setHabits([]);
     setHabitLogs([]);
+    setRituals([]);
   }, []);
 
   // ---------- XP derivat ----------
@@ -379,6 +411,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     xpEvents,
     habits,
     habitLogs,
+    rituals,
     xp,
     addTask,
     updateTask,
@@ -394,6 +427,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     logHabit,
     unlogHabit,
     updateLog,
+    grantXp,
+    revokeXp,
+    completeRitual,
     signOut,
   };
 
