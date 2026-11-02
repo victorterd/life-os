@@ -54,6 +54,7 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
     period: initial.period === undefined ? today : initial.period,
   });
   const [time, setTime] = useState(initial.start_time?.slice(0, 5) ?? "");
+  const [duration, setDuration] = useState<number>(initial.duration_min ?? 60);
   const [projectId, setProjectId] = useState<string | null>(initial.project_id ?? null);
   const [parentId, setParentId] = useState<string | null>(initial.parent_id ?? null);
   const [recurrence, setRecurrence] = useState<Recurrence | null>(initial.recurrence ?? null);
@@ -110,6 +111,7 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
       horizon: when.horizon,
       period: when.period,
       start_time: when.horizon === "day" && time ? time : null,
+      duration_min: when.horizon === "day" && time ? duration : null,
       project_id: pid,
       parent_id: when.horizon === "month" ? null : parentId,
       recurrence: when.period ? recurrence : null,
@@ -217,7 +219,7 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
             </div>
           </Field>
 
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="flex flex-col gap-5">
             <Field label="Prioritate" icon={<Flag size={14} />}>
               <div className="flex gap-1.5">
                 {PRIORITIES.map((p) => (
@@ -230,7 +232,15 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
 
             {when.horizon === "day" && when.period && (
               <Field label="Oră (opțional)" icon={<Clock size={14} />}>
-                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-9 rounded-full border border-line bg-surface px-3 text-[14px] outline-none focus:border-navy" />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-9 rounded-full border border-line bg-surface px-3 text-[14px] outline-none focus:border-navy" />
+                  {time &&
+                    [15, 30, 60, 90, 120].map((m) => (
+                      <Chip key={m} active={duration === m} onClick={() => setDuration(m)}>
+                        {m < 60 ? `${m}m` : `${m / 60}h`.replace(".5h", "h30")}
+                      </Chip>
+                    ))}
+                </div>
               </Field>
             )}
           </div>
