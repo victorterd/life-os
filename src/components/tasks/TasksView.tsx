@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Plus, SlidersHorizontal } from "lucide-react";
 import { AREAS } from "@/lib/areas";
 import {
@@ -21,6 +21,8 @@ import { useStore } from "@/lib/data/store";
 import type { Horizon, Task } from "@/lib/data/types";
 import { TaskItem } from "./TaskItem";
 import { useTaskSheet } from "./TaskSheet";
+import { RitualFlow } from "@/components/rituals/Rituals";
+import type { RitualKind } from "@/lib/data/store";
 
 type Tab = "day" | "week" | "month" | "inbox";
 
@@ -42,7 +44,11 @@ export function sortTasks(a: Task, b: Task) {
 
 export function TasksView() {
   const [tab, setTab] = useState<Tab>("day");
-  const { tasks } = useStore();
+  const [ritual, setRitual] = useState<{ kind: RitualKind; date: string } | null>(null);
+  const { tasks, rituals } = useStore();
+  const today = todayISO();
+  const nextWeek = weekStart(addDays(today, 7));
+  const ritualDone = (kind: RitualKind, date: string) => rituals.some((r) => r.kind === kind && r.date === date);
   const inboxCount = tasks.filter((t) => !t.period && !t.done).length;
 
   return (
@@ -73,12 +79,36 @@ export function TasksView() {
         </div>
       </header>
 
+      <div className="-mt-2 flex flex-wrap gap-2">
+        {(
+          [
+            ["plan_day", today, "☀️ Planifică ziua"],
+            ["review_day", today, "🌙 Review-ul zilei"],
+            ["plan_week", isoWeekdayNow(today) >= 6 ? nextWeek : weekStart(today), "🗓️ Planifică săptămâna"],
+          ] as const
+        ).map(([kind, date, label]) => (
+          <button
+            key={kind}
+            onClick={() => setRitual({ kind, date })}
+            className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition ${ritualDone(kind, date) ? "bg-health-soft text-[#13805a]" : "bg-surface text-ink-2 shadow-[var(--shadow-card)] hover:text-navy"}`}
+          >
+            {label}
+            {ritualDone(kind, date) && " ✓"}
+          </button>
+        ))}
+      </div>
+      <AnimatePresence>{ritual && <RitualFlow kind={ritual.kind} date={ritual.date} onClose={() => setRitual(null)} />}</AnimatePresence>
+
       {tab === "day" && <DayView />}
       {tab === "week" && <WeekView />}
       {tab === "month" && <MonthView />}
       {tab === "inbox" && <InboxView />}
     </div>
   );
+}
+
+function isoWeekdayNow(d: string) {
+  return ((fromISO(d).getDay() + 6) % 7) + 1;
 }
 
 // ---------------------------------------------------------------- Zi

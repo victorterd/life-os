@@ -15,6 +15,7 @@ import { todayISO, weekDays, weekStart } from "@/lib/dates";
 import { AreaStats } from "./AreaStats";
 import { GymCard } from "./GymCard";
 import { MoodCard } from "./MoodCard";
+import { RitualBanner } from "@/components/rituals/Rituals";
 
 const DAILY_XP_GOAL = 150;
 const NAME = "Victor";
@@ -66,6 +67,8 @@ export function Dashboard() {
           </div>
         </div>
       </header>
+
+      <RitualBanner now={now} />
 
       {/* Citat + inele */}
       <div className="grid gap-4 lg:grid-cols-12 lg:gap-6">
