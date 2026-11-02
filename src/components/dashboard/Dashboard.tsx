@@ -62,7 +62,7 @@ export function Dashboard() {
               <span className="tabular text-ink-3">{lvl.into}/{lvl.needed}</span>
             </div>
             <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-navy-soft">
-              <motion.div className="h-full rounded-full bg-navy" animate={{ width: `${(lvl.into / lvl.needed) * 100}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
+              <motion.div className="h-full rounded-full bg-navy" initial={{ width: 0 }} animate={{ width: `${(lvl.into / lvl.needed) * 100}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
             </div>
           </div>
         </div>

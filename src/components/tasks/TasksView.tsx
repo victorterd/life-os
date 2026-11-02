@@ -321,7 +321,7 @@ function MonthView() {
                   </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full" style={{ background: area.soft }}>
-                  <motion.div className="h-full rounded-full" style={{ background: area.color }} animate={{ width: `${pct * 100}%` }} />
+                  <motion.div className="h-full rounded-full" style={{ background: area.color }} initial={{ width: 0 }} animate={{ width: `${pct * 100}%` }} />
                 </div>
               </div>
               <ul className="flex flex-col gap-1">
@@ -475,7 +475,7 @@ function Progress({ done, total, label = "gata" }: { done: number; total: number
         <span className="font-semibold text-ink">{done}</span>/{total} {label}
       </span>
       <div className="h-2 w-28 overflow-hidden rounded-full bg-navy-soft">
-        <motion.div className="h-full rounded-full bg-navy" animate={{ width: `${pct * 100}%` }} />
+        <motion.div className="h-full rounded-full bg-navy" initial={{ width: 0 }} animate={{ width: `${pct * 100}%` }} />
       </div>
     </div>
   );

@@ -334,7 +334,7 @@ function FreeEditor({ entryId, onClose }: { entryId: string; onClose: () => void
   return (
     <Sheet onClose={close}>
       <EditorHeader entry={entry} onClose={onClose} label="Jurnal liber" />
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 pb-6 pt-3 sm:px-7">
+      <div className="[&>*]:shrink-0 flex flex-1 flex-col gap-3 overflow-y-auto px-5 pb-6 pt-3 sm:px-7">
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titlu (opțional)" className="bg-transparent text-[26px] font-semibold tracking-tight outline-none placeholder:text-ink-3/60" />
         <textarea
           autoFocus
@@ -370,7 +370,7 @@ function ReframeEditor({ entryId, onClose }: { entryId: string; onClose: () => v
   return (
     <Sheet onClose={onClose} tone="canvas">
       <EditorHeader entry={entry} onClose={onClose} label="Negativ → Pozitiv" />
-      <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-6 pt-3 sm:px-7">
+      <div className="[&>*]:shrink-0 flex flex-col gap-4 overflow-y-auto px-4 pb-6 pt-3 sm:px-7">
         <input
           defaultValue={entry.title ?? ""}
           onBlur={(e) => e.target.value !== (entry.title ?? "") && updateEntry(entry.id, { title: e.target.value.trim() || null })}

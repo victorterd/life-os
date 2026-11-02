@@ -133,9 +133,9 @@ function HabitSheet({ initial, onClose }: { initial: Draft; onClose: () => void 
           </button>
         </div>
 
-        <div className="flex flex-col gap-5 overflow-y-auto px-5 pb-5 pt-2 sm:px-6">
+        <div className="[&>*]:shrink-0 flex flex-col gap-5 overflow-y-auto px-5 pb-5 pt-2 sm:px-6">
           {!editing && (
-            <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1 sm:-mx-6 sm:px-6">
+            <div className="-mx-5 flex shrink-0 gap-1.5 overflow-x-auto px-5 pb-1 sm:-mx-6 sm:px-6">
               {TEMPLATES.map((t) => (
                 <button
                   key={t.label}

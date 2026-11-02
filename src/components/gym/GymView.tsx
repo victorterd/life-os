@@ -677,7 +677,7 @@ function TemplateEditor({ template, onClose }: { template: Template | null; onCl
             <button key={c} onClick={() => setColor(c)} aria-label={`Culoare ${c}`} aria-pressed={color === c} className={`size-7 rounded-full transition ${color === c ? "ring-2 ring-ink ring-offset-2" : ""}`} style={{ background: c }} />
           ))}
         </div>
-        <ul className="mt-4 flex flex-col gap-2 overflow-y-auto px-5 sm:px-6">
+        <ul className="[&>*]:shrink-0 mt-4 flex flex-col gap-2 overflow-y-auto px-5 sm:px-6">
           {items.map((it, i) => (
             <li key={`${it.exercise_id}-${i}`} className="flex items-center gap-2 rounded-2xl bg-surface-2 p-2.5">
               <div className="flex flex-col">
@@ -754,7 +754,7 @@ function ExercisePicker({ exclude, onPick, onClose }: { exclude: string[]; onPic
             <X size={18} />
           </button>
         </div>
-        <div className="flex gap-1.5 overflow-x-auto px-4 py-3">
+        <div className="flex shrink-0 gap-1.5 overflow-x-auto px-4 py-3">
           {MUSCLES.map((m) => (
             <button key={m} onClick={() => setMuscle(muscle === m ? null : m)} aria-pressed={muscle === m} className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium ${muscle === m ? "bg-fitness text-ink" : "bg-surface-2 text-ink-2"}`}>
               {m}

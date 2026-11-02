@@ -162,7 +162,7 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
           </button>
         </div>
 
-        <div className="flex flex-col gap-5 overflow-y-auto px-5 pb-5 pt-2 sm:px-6">
+        <div className="[&>*]:shrink-0 flex flex-col gap-5 overflow-y-auto px-5 pb-5 pt-2 sm:px-6">
           <textarea
             ref={titleRef}
             value={title}
