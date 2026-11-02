@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #f2f3f7;
+  --surface: #ffffff;
+  --surface-2: #f6f7fa;
+  --line: #e6e8ef;
+  --ink: #0e1630;
+  --ink-2: #4a5270;
+  --ink-3: #8a90a6;
+  --navy: #1b2b6b;
+  --navy-soft: #e8ebf6;
+
+  --health: #22b07d;
+  --health-soft: #e2f5ee;
+  --fitness: #ff7a45;
+  --fitness-soft: #ffece3;
+  --mind: #7b6cf6;
+  --mind-soft: #eeebfe;
+  --work: #2e7cf6;
+  --work-soft: #e4eefe;
+  --personal: #f5b83d;
+  --personal-soft: #fdf3dc;
+  --danger: #e5484d;
+  --danger-soft: #fde8e8;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-navy: var(--navy);
+  --color-navy-soft: var(--navy-soft);
+  --color-health: var(--health);
+  --color-health-soft: var(--health-soft);
+  --color-fitness: var(--fitness);
+  --color-fitness-soft: var(--fitness-soft);
+  --color-mind: var(--mind);
+  --color-mind-soft: var(--mind-soft);
+  --color-work: var(--work);
+  --color-work-soft: var(--work-soft);
+  --color-personal: var(--personal);
+  --color-personal-soft: var(--personal-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-onest);
+  --font-serif: var(--font-instrument);
+  --shadow-card: 0 1px 2px rgb(14 22 48 / 0.04), 0 8px 24px -12px rgb(14 22 48 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(14 22 48 / 0.05), 0 18px 40px -16px rgb(27 43 107 / 0.28);
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-onest), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "ss01", "cv11";
+}
+
+:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
