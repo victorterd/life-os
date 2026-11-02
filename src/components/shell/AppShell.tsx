@@ -1,13 +1,37 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut, Plus } from "lucide-react";
+import { useStore } from "@/lib/data/store";
+import { useTaskSheet } from "@/components/tasks/TaskSheet";
 import { NAV } from "./nav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { session, authReady, loading, error, signOut } = useStore();
+  const sheet = useTaskSheet();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isLogin = pathname === "/login";
+
+  useEffect(() => {
+    if (!authReady) return;
+    if (!session && !isLogin) router.replace("/login");
+    if (session && isLogin) router.replace("/");
+  }, [authReady, session, isLogin, router]);
+
+  if (isLogin) return <>{children}</>;
+  if (!authReady || !session || loading) {
+    return (
+      <div className="grid min-h-dvh place-items-center">
+        <div className="animate-pulse">
+          <Logo size={44} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh lg:pl-[248px]">
@@ -46,15 +70,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <button className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-navy px-4 py-3 text-[15px] font-medium text-white shadow-[var(--shadow-lift)] transition active:scale-[0.98]">
+        <button onClick={() => sheet.open()} className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-navy px-4 py-3 text-[15px] font-medium text-white shadow-[var(--shadow-lift)] transition active:scale-[0.98]">
           <Plus size={18} strokeWidth={2.4} />
           Adaugă task
         </button>
 
-        <div className="mt-auto px-3 text-[13px] text-ink-3">Faza 1 · machetă</div>
+        <button onClick={signOut} className="mt-auto flex items-center gap-2 rounded-xl px-3 py-2 text-[14px] text-ink-3 hover:bg-white/60 hover:text-ink">
+          <LogOut size={16} />
+          Ieși din cont
+        </button>
       </aside>
 
       <main className="mx-auto w-full max-w-[1240px] px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-8">
+        {error && (
+          <div role="alert" className="mb-4 rounded-2xl bg-danger-soft px-4 py-3 text-[14px] text-danger">
+            Nu s-a putut salva: {error}
+          </div>
+        )}
         {children}
       </main>
 
@@ -64,6 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <MobileItem key={item.href} item={item} active={isActive(item.href)} />
         ))}
         <button
+          onClick={() => sheet.open()}
           aria-label="Adaugă task"
           className="grid size-12 place-items-center rounded-2xl bg-navy text-white shadow-[var(--shadow-lift)] active:scale-95"
         >

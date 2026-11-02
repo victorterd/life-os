@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { AREAS, levelFromXp } from "@/lib/areas";
 import { quoteOfTheDay } from "@/lib/quotes";
 import { useNow } from "@/lib/hooks/useNow";
-import { MOCK_AREA_XP, MOCK_HABITS, MOCK_TASKS, MOCK_TOTAL_XP, MOCK_WEEK } from "@/lib/mock";
+import { MOCK_HABITS, MOCK_WEEK } from "@/lib/mock";
+import { useStore } from "@/lib/data/store";
+import { useTodayTasks } from "@/components/tasks/TasksView";
 import { DayRings } from "./DayRings";
 import { WeekStrip } from "./WeekStrip";
 import { QuoteCard } from "./QuoteCard";
@@ -24,29 +25,15 @@ function hhmm(d: Date) {
 
 export function Dashboard() {
   const now = useNow();
-  const [tasks, setTasks] = useState(MOCK_TASKS);
+  const { xp } = useStore();
+  const tasks = useTodayTasks();
   const [habits, setHabits] = useState(MOCK_HABITS);
-  const [areaXp, setAreaXp] = useState(MOCK_AREA_XP);
-  const [todayXp, setTodayXp] = useState(40);
 
   if (!now) return <div className="h-dvh" />;
-
-  function gain(area: keyof typeof AREAS, xp: number) {
-    setTodayXp((v) => Math.max(0, v + xp));
-    setAreaXp((a) => ({ ...a, [area]: Math.max(0, a[area] + xp) }));
-  }
-
-  function toggleTask(id: string) {
-    const t = tasks.find((x) => x.id === id);
-    if (!t) return;
-    gain(t.area, t.done ? -t.xp : t.xp);
-    setTasks((ts) => ts.map((x) => (x.id === id ? { ...x, done: !x.done } : x)));
-  }
 
   function logHabit(id: string) {
     const h = habits.find((x) => x.id === id);
     if (!h) return;
-    gain(h.area, h.loggedAt ? -h.xp : h.xp);
     const loggedAt = h.loggedAt ? undefined : hhmm(new Date());
     setHabits((hs) => hs.map((x) => (x.id === id ? { ...x, loggedAt } : x)));
   }
@@ -54,14 +41,12 @@ export function Dashboard() {
   function addQuantity(id: string) {
     const h = habits.find((x) => x.id === id);
     if (!h?.goal) return;
-    const before = h.goal.value;
-    const value = Math.min(h.goal.target, +(before + 0.25).toFixed(2));
-    if (before < h.goal.target && value >= h.goal.target) gain(h.area, h.xp);
+    const value = Math.min(h.goal.target, +(h.goal.value + 0.25).toFixed(2));
     setHabits((hs) => hs.map((x) => (x.id === id && x.goal ? { ...x, goal: { ...x.goal, value } } : x)));
   }
 
-  const totalXp = MOCK_TOTAL_XP + todayXp;
-  const lvl = levelFromXp(totalXp);
+  const lvl = xp.level;
+  const todayXp = xp.today;
   const habitsDone = habits.filter((h) => h.loggedAt || (h.goal && h.goal.value >= h.goal.target)).length;
   const todayIndex = (now.getDay() + 6) % 7;
   const rawDate = now.toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "long" });
@@ -118,7 +103,7 @@ export function Dashboard() {
       {/* Taskuri + obiceiuri */}
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <TodayTasks tasks={tasks} onToggle={toggleTask} />
+          <TodayTasks tasks={tasks} />
         </div>
         <div className="lg:col-span-5">
           <HabitTimeline habits={habits} nowHHMM={hhmm(now)} onLog={logHabit} onAdd={addQuantity} />
@@ -130,7 +115,7 @@ export function Dashboard() {
         <GymCard />
         <MoodCard />
         <div className="sm:col-span-2 lg:col-span-1">
-          <AreaStats xp={areaXp} />
+          <AreaStats xp={xp.byArea} />
         </div>
       </div>
     </div>

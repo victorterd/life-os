@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Onest, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const onest = Onest({
   variable: "--font-onest",
@@ -28,7 +29,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ro" className={`${onest.variable} ${instrument.variable} h-full`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

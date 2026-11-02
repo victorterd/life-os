@@ -6,9 +6,12 @@ import { useEffect, useState } from "react";
 export function useNow(intervalMs = 30_000): Date | null {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
-    setNow(new Date());
+    const first = setTimeout(() => setNow(new Date()), 0);
     const id = setInterval(() => setNow(new Date()), intervalMs);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
   }, [intervalMs]);
   return now;
 }

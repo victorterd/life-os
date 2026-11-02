@@ -15,7 +15,7 @@ export function DayRings({ rings }: { rings: Ring[] }) {
         {rings.map((ring, i) => {
           const r = SIZE / 2 - STROKE / 2 - i * (STROKE + GAP);
           const c = 2 * Math.PI * r;
-          const pct = Math.min(ring.value / ring.target, 1);
+          const pct = ring.target ? Math.min(ring.value / ring.target, 1) : 0;
           return (
             <g key={ring.label}>
               <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ring.color} strokeOpacity={0.14} strokeWidth={STROKE} />
