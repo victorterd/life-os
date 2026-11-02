@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SQL completat cu secrete (nu se urcă pe GitHub)
+supabase/local/

@@ -6,8 +6,10 @@ import { supabase } from "../supabase";
 import { AREAS, levelFromXp, type AreaKey } from "../areas";
 import { addDays, addMonths, isoWeekday, monthStart, todayISO, weekStart } from "../dates";
 import { TASK_XP, type Project, type Recurrence, type Subtask, type Task, type XpEvent } from "./types";
+import { quantityOn, type Habit, type HabitLog } from "./habits";
 
 type NewTask = Partial<Omit<Task, "id" | "created_at">> & { title: string };
+export type NewHabit = Partial<Omit<Habit, "id" | "created_at">> & { name: string };
 
 type Store = {
   session: Session | null;
@@ -19,6 +21,8 @@ type Store = {
   subtasks: Subtask[];
   projects: Project[];
   xpEvents: XpEvent[];
+  habits: Habit[];
+  habitLogs: HabitLog[];
 
   xp: {
     total: number;
@@ -37,6 +41,13 @@ type Store = {
   deleteSubtask: (id: string) => Promise<void>;
 
   addProject: (name: string, area: AreaKey) => Promise<Project | null>;
+
+  addHabit: (h: NewHabit) => Promise<Habit | null>;
+  updateHabit: (id: string, patch: Partial<Habit>) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
+  logHabit: (habit: Habit, opts: { date: string; slot?: string | null; value?: number | null; loggedAt?: string }) => Promise<void>;
+  unlogHabit: (logId: string) => Promise<void>;
+  updateLog: (logId: string, patch: Partial<Pick<HabitLog, "logged_at" | "note" | "value">>) => Promise<void>;
 
   signOut: () => Promise<void>;
 };
@@ -90,6 +101,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [xpEvents, setXpEvents] = useState<XpEvent[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
 
   // ---------- Auth ----------
   useEffect(() => {
@@ -111,14 +124,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       // Taskuri nefăcute + tot ce ține de ultimele ~3 luni
       const since = addMonths(monthStart(todayISO()), -2);
-      const [t, s, p, x] = await Promise.all([
+      const logsSince = addDays(todayISO(), -400);
+      const [t, s, p, x, h, hl] = await Promise.all([
         supabase.from("tasks").select("*").or(`done.eq.false,period.gte.${since},period.is.null`).order("sort_order").order("created_at"),
         supabase.from("subtasks").select("*").order("sort_order"),
         supabase.from("projects").select("*").eq("archived", false).order("created_at"),
         supabase.from("xp_events").select("id,area,amount,source,source_id,created_at"),
+        supabase.from("habits").select("*").eq("archived", false).order("sort_order").order("created_at"),
+        supabase.from("habit_logs").select("id,habit_id,date,slot,logged_at,value,note").gte("date", logsSince).order("logged_at"),
       ]);
       if (cancelled) return;
-      for (const r of [t, s, p, x]) if (fail(r.error, setError)) break;
+      for (const r of [t, s, p, x, h, hl]) if (fail(r.error, setError)) break;
+      setHabits((h.data as Habit[]) ?? []);
+      setHabitLogs((hl.data as HabitLog[]) ?? []);
       setTasks((t.data as Task[]) ?? []);
       setSubtasks((s.data as Subtask[]) ?? []);
       setProjects((p.data as Project[]) ?? []);
@@ -253,12 +271,86 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return data as Project;
   }, []);
 
+  // ---------- Obiceiuri ----------
+  const addHabit = useCallback<Store["addHabit"]>(async (input) => {
+    const { data, error } = await supabase.from("habits").insert(input).select("*").single();
+    if (fail(error, setError)) return null;
+    setHabits((hs) => [...hs, data as Habit]);
+    return data as Habit;
+  }, []);
+
+  const updateHabit = useCallback<Store["updateHabit"]>(async (id, patch) => {
+    setHabits((hs) => hs.map((h) => (h.id === id ? { ...h, ...patch } : h)));
+    const { error } = await supabase.from("habits").update(patch).eq("id", id);
+    fail(error, setError);
+  }, []);
+
+  const deleteHabit = useCallback<Store["deleteHabit"]>(async (id) => {
+    // Arhivăm, ca istoricul și XP-ul să rămână
+    setHabits((hs) => hs.filter((h) => h.id !== id));
+    const { error } = await supabase.from("habits").update({ archived: true }).eq("id", id);
+    fail(error, setError);
+  }, []);
+
+  const logHabit = useCallback<Store["logHabit"]>(
+    async (habit, { date, slot = null, value = null, loggedAt }) => {
+      if (habit.kind !== "quantity" && habitLogs.some((l) => l.habit_id === habit.id && l.date === date && l.slot === slot)) return;
+      const before = habit.kind === "quantity" ? quantityOn(habitLogs, habit.id, date) : 0;
+      const temp: HabitLog = {
+        id: `tmp-${Math.random()}`,
+        habit_id: habit.id,
+        date,
+        slot,
+        value,
+        note: null,
+        logged_at: loggedAt ?? new Date().toISOString(),
+      };
+      setHabitLogs((ls) => [...ls, temp]);
+      const { data, error } = await supabase
+        .from("habit_logs")
+        .insert({ habit_id: habit.id, date, slot, value, logged_at: temp.logged_at })
+        .select("id,habit_id,date,slot,logged_at,value,note")
+        .single();
+      if (fail(error, setError)) {
+        setHabitLogs((ls) => ls.filter((l) => l.id !== temp.id));
+        return;
+      }
+      const log = data as HabitLog;
+      setHabitLogs((ls) => ls.map((l) => (l.id === temp.id ? log : l)));
+      if (habit.kind === "quantity") {
+        const target = Number(habit.target_value) || 0;
+        if (before < target && before + (Number(value) || 0) >= target) await grantXp(habit.area, habit.xp, "habit", log.id);
+      } else {
+        await grantXp(habit.area, habit.xp, "habit", log.id);
+      }
+    },
+    [habitLogs, grantXp],
+  );
+
+  const unlogHabit = useCallback<Store["unlogHabit"]>(
+    async (logId) => {
+      setHabitLogs((ls) => ls.filter((l) => l.id !== logId));
+      const { error } = await supabase.from("habit_logs").delete().eq("id", logId);
+      fail(error, setError);
+      await revokeXp("habit", logId);
+    },
+    [revokeXp],
+  );
+
+  const updateLog = useCallback<Store["updateLog"]>(async (logId, patch) => {
+    setHabitLogs((ls) => ls.map((l) => (l.id === logId ? { ...l, ...patch } : l)));
+    const { error } = await supabase.from("habit_logs").update(patch).eq("id", logId);
+    fail(error, setError);
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setTasks([]);
     setSubtasks([]);
     setProjects([]);
     setXpEvents([]);
+    setHabits([]);
+    setHabitLogs([]);
   }, []);
 
   // ---------- XP derivat ----------
@@ -285,6 +377,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     subtasks,
     projects,
     xpEvents,
+    habits,
+    habitLogs,
     xp,
     addTask,
     updateTask,
@@ -294,6 +388,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleSubtask,
     deleteSubtask,
     addProject,
+    addHabit,
+    updateHabit,
+    deleteHabit,
+    logHabit,
+    unlogHabit,
+    updateLog,
     signOut,
   };
 

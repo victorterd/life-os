@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "LifeOS",
   description: "Taskuri, obiceiuri, sală și jurnal, într-un singur loc.",
   appleWebApp: { capable: true, title: "LifeOS", statusBarStyle: "default" },
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }, { url: "/icons/icon-192.png", sizes: "192x192" }],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

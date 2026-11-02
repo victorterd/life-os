@@ -9,7 +9,7 @@ export function WeekStrip({ week, todayIndex, streak }: { week: boolean[]; today
         <h2 className="text-[15px] font-semibold">Săptămâna ta</h2>
         <span className="flex items-center gap-1 text-[13px] font-medium text-fitness">
           <Flame size={15} strokeWidth={2.4} />
-          {streak} zile la rând
+          {streak > 0 ? `${streak} ${streak === 1 ? "zi" : "zile"} la rând` : "Fă din azi prima zi"}
         </span>
       </div>
       <ol className="grid grid-cols-7 gap-1.5">

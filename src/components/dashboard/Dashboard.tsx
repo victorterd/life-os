@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "motion/react";
 import { quoteOfTheDay } from "@/lib/quotes";
 import { useNow } from "@/lib/hooks/useNow";
-import { MOCK_HABITS, MOCK_WEEK } from "@/lib/mock";
 import { useStore } from "@/lib/data/store";
 import { useTodayTasks } from "@/components/tasks/TasksView";
 import { DayRings } from "./DayRings";
 import { WeekStrip } from "./WeekStrip";
 import { QuoteCard } from "./QuoteCard";
 import { TodayTasks } from "./TodayTasks";
-import { HabitTimeline } from "./HabitTimeline";
+import { HabitToday } from "@/components/habits/HabitToday";
+import { dayComplete, dayProgress, dayStreak, isDueOn } from "@/lib/data/habits";
+import { todayISO, weekDays, weekStart } from "@/lib/dates";
 import { AreaStats } from "./AreaStats";
 import { GymCard } from "./GymCard";
 import { MoodCard } from "./MoodCard";
@@ -19,39 +19,23 @@ import { MoodCard } from "./MoodCard";
 const DAILY_XP_GOAL = 150;
 const NAME = "Victor";
 
-function hhmm(d: Date) {
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 export function Dashboard() {
   const now = useNow();
-  const { xp } = useStore();
+  const { xp, habits, habitLogs } = useStore();
   const tasks = useTodayTasks();
-  const [habits, setHabits] = useState(MOCK_HABITS);
 
   if (!now) return <div className="h-dvh" />;
 
-  function logHabit(id: string) {
-    const h = habits.find((x) => x.id === id);
-    if (!h) return;
-    const loggedAt = h.loggedAt ? undefined : hhmm(new Date());
-    setHabits((hs) => hs.map((x) => (x.id === id ? { ...x, loggedAt } : x)));
-  }
-
-  function addQuantity(id: string) {
-    const h = habits.find((x) => x.id === id);
-    if (!h?.goal) return;
-    const value = Math.min(h.goal.target, +(h.goal.value + 0.25).toFixed(2));
-    setHabits((hs) => hs.map((x) => (x.id === id && x.goal ? { ...x, goal: { ...x.goal, value } } : x)));
-  }
-
   const lvl = xp.level;
   const todayXp = xp.today;
-  const habitsDone = habits.filter((h) => h.loggedAt || (h.goal && h.goal.value >= h.goal.target)).length;
+  const today = todayISO();
+  const dueToday = habits.filter((h) => h.kind !== "weekly" && isDueOn(h, today));
+  const habitsDone = dueToday.filter((h) => dayProgress(h, habitLogs, today).complete).length;
   const todayIndex = (now.getDay() + 6) % 7;
   const rawDate = now.toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "long" });
   const dateLabel = rawDate.charAt(0).toUpperCase() + rawDate.slice(1);
-  const week = MOCK_WEEK.map((_, i) => i < todayIndex);
+  const week = weekDays(weekStart(today)).map((d) => d <= today && dayComplete(habits, habitLogs, d) === true);
+  const streakDays = dayStreak(habits, habitLogs, today);
 
   return (
     <div className="flex flex-col gap-6 lg:gap-8">
@@ -92,11 +76,11 @@ export function Dashboard() {
           <DayRings
             rings={[
               { label: "Taskuri", value: tasks.filter((t) => t.done).length, target: tasks.length, color: "var(--work)" },
-              { label: "Obiceiuri", value: habitsDone, target: habits.length, color: "var(--health)" },
+              { label: "Obiceiuri", value: habitsDone, target: dueToday.length, color: "var(--health)" },
               { label: "XP azi", value: todayXp, target: DAILY_XP_GOAL, color: "var(--personal)" },
             ]}
           />
-          <WeekStrip week={week} todayIndex={todayIndex} streak={4} />
+          <WeekStrip week={week} todayIndex={todayIndex} streak={streakDays} />
         </section>
       </div>
 
@@ -106,7 +90,7 @@ export function Dashboard() {
           <TodayTasks tasks={tasks} />
         </div>
         <div className="lg:col-span-5">
-          <HabitTimeline habits={habits} nowHHMM={hhmm(now)} onLog={logHabit} onAdd={addQuantity} />
+          <HabitToday date={today} today={today} />
         </div>
       </div>
 
