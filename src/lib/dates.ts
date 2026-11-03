@@ -78,3 +78,22 @@ export function nowHHMM(): string {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
+
+/** "10:30" -> 630 */
+export function toMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + (m || 0);
+}
+
+/** 630 -> "10:30" (plafonat la 23:59) */
+export function fromMinutes(n: number): string {
+  const v = Math.max(0, Math.min(23 * 60 + 59, Math.round(n)));
+  return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
+}
+
+/** Interval afișabil: "10:00–11:30" sau doar "10:00" */
+export function timeRange(start: string | null, durationMin: number | null): string {
+  if (!start) return "";
+  const s = start.slice(0, 5);
+  return durationMin ? `${s}–${fromMinutes(toMinutes(s) + durationMin)}` : s;
+}

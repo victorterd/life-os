@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Dumbbell, Plus } from "lucide-react";
 import { AREAS } from "@/lib/areas";
-import { addDays, addMonths, fromISO, labelDay, labelMonth, labelWeek, monthStart, toISO, todayISO, weekDays, weekStart } from "@/lib/dates";
+import { addDays, addMonths, fromISO, labelDay, labelMonth, labelWeek, monthStart, timeRange, toISO, todayISO, weekDays, weekStart } from "@/lib/dates";
 import { useStore } from "@/lib/data/store";
 import { useGym } from "@/lib/data/gym";
 import { useJournal, MOODS } from "@/lib/data/journal";
@@ -288,7 +288,7 @@ function WeekGrid({ start, today, now }: { start: string; today: string; now: Da
                   {hours.map((h) => (
                     <button
                       key={h}
-                      onClick={() => sheet.open({ horizon: "day", period: d, start_time: `${String(h).padStart(2, "0")}:00` })}
+                      onClick={() => sheet.open({ horizon: "day", period: d, start_time: `${String(h).padStart(2, "0")}:00`, duration_min: 60 })}
                       aria-label={`Task nou ${labelDay(d)} la ${h}:00`}
                       className="absolute inset-x-0 border-t border-line/70 hover:bg-navy-soft/40"
                       style={{ top: (h - START_H) * HOUR, height: HOUR }}
@@ -317,7 +317,7 @@ function WeekGrid({ start, today, now }: { start: string; today: string; now: Da
                         <span className={`block font-semibold ${t.done ? "line-through" : ""}`} style={{ color: area.ink }}>
                           {t.title}
                         </span>
-                        <span className="tabular text-ink-3">{hhmm(t.start_time!)}</span>
+                        <span className="tabular text-ink-3">{timeRange(t.start_time, t.duration_min)}</span>
                       </button>
                     );
                   })}

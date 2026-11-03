@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, Clock, Flag, FolderClosed, Plus, Repeat, Target, Trash2, X } from "lucide-react";
 import { AREAS, type AreaKey } from "@/lib/areas";
-import { addDays, labelMonth, labelWeek, monthStart, relativeDay, todayISO, weekStart } from "@/lib/dates";
+import { addDays, fromMinutes, labelMonth, labelWeek, monthStart, relativeDay, toMinutes, todayISO, weekStart } from "@/lib/dates";
 import { useStore } from "@/lib/data/store";
 import type { Horizon, Priority, Recurrence, Task } from "@/lib/data/types";
 
@@ -54,7 +54,16 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
     period: initial.period === undefined ? today : initial.period,
   });
   const [time, setTime] = useState(initial.start_time?.slice(0, 5) ?? "");
-  const [duration, setDuration] = useState<number>(initial.duration_min ?? 60);
+  const [end, setEnd] = useState(initial.start_time ? fromMinutes(toMinutes(initial.start_time.slice(0, 5)) + (initial.duration_min ?? 60)) : "");
+  const duration = time && end ? toMinutes(end) - toMinutes(time) : null;
+  const badRange = duration !== null && duration <= 0;
+
+  function changeStart(v: string) {
+    // păstrează lungimea intervalului când muți începutul
+    const len = duration && duration > 0 ? duration : 60;
+    setTime(v);
+    setEnd(v ? fromMinutes(toMinutes(v) + len) : "");
+  }
   const [projectId, setProjectId] = useState<string | null>(initial.project_id ?? null);
   const [parentId, setParentId] = useState<string | null>(initial.parent_id ?? null);
   const [recurrence, setRecurrence] = useState<Recurrence | null>(initial.recurrence ?? null);
@@ -96,7 +105,7 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
   }
 
   async function save() {
-    if (!title.trim() || saving) return;
+    if (!title.trim() || saving || badRange) return;
     setSaving(true);
     let pid = projectId;
     if (newProject?.trim()) {
@@ -111,7 +120,7 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
       horizon: when.horizon,
       period: when.period,
       start_time: when.horizon === "day" && time ? time : null,
-      duration_min: when.horizon === "day" && time ? duration : null,
+      duration_min: when.horizon === "day" && time && duration && duration > 0 ? duration : null,
       project_id: pid,
       parent_id: when.horizon === "month" ? null : parentId,
       recurrence: when.period ? recurrence : null,
@@ -231,16 +240,45 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
             </Field>
 
             {when.horizon === "day" && when.period && (
-              <Field label="Oră (opțional)" icon={<Clock size={14} />}>
+              <Field label="Interval orar (opțional)" icon={<Clock size={14} />}>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-9 rounded-full border border-line bg-surface px-3 text-[14px] outline-none focus:border-navy" />
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => changeStart(e.target.value)}
+                    aria-label="De la"
+                    className="tabular h-9 rounded-full border border-line bg-surface px-3 text-[14px] outline-none focus:border-navy"
+                  />
+                  <span className="text-ink-3">–</span>
+                  <input
+                    type="time"
+                    value={end}
+                    disabled={!time}
+                    onChange={(e) => setEnd(e.target.value)}
+                    aria-label="Până la"
+                    aria-invalid={badRange}
+                    className={`tabular h-9 rounded-full border bg-surface px-3 text-[14px] outline-none focus:border-navy disabled:opacity-40 ${badRange ? "border-danger text-danger" : "border-line"}`}
+                  />
                   {time &&
-                    [15, 30, 60, 90, 120].map((m) => (
-                      <Chip key={m} active={duration === m} onClick={() => setDuration(m)}>
-                        {m < 60 ? `${m}m` : `${m / 60}h`.replace(".5h", "h30")}
+                    [30, 60, 120].map((m) => (
+                      <Chip key={m} active={duration === m} onClick={() => setEnd(fromMinutes(toMinutes(time) + m))}>
+                        +{m < 60 ? `${m}m` : `${m / 60}h`}
                       </Chip>
                     ))}
+                  {time && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTime("");
+                        setEnd("");
+                      }}
+                      className="ml-1 text-[13px] text-ink-3 hover:text-danger"
+                    >
+                      Fără oră
+                    </button>
+                  )}
                 </div>
+                {badRange && <p className="text-[13px] text-danger">Ora de final trebuie să fie după ora de început.</p>}
               </Field>
             )}
           </div>
@@ -354,7 +392,7 @@ function TaskSheet({ initial, onClose }: { initial: Draft; onClose: () => void }
           <span className="ml-auto truncate pr-2 text-[13px] text-ink-3">{whenLabel(when)}</span>
           <button
             onClick={save}
-            disabled={!title.trim() || saving}
+            disabled={!title.trim() || saving || badRange}
             className="rounded-xl bg-navy px-5 py-2.5 text-[15px] font-medium text-white transition active:scale-[0.98] disabled:opacity-40"
           >
             {editing ? "Salvează" : "Adaugă taskul"}

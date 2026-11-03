@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Clock, Flag, FolderClosed, ListChecks, Repeat, Target } from "lucide-react";
 import { AREAS } from "@/lib/areas";
-import { relativeDay, todayISO } from "@/lib/dates";
+import { relativeDay, timeRange, todayISO } from "@/lib/dates";
 import { useStore } from "@/lib/data/store";
 import { TASK_XP, type Task } from "@/lib/data/types";
 import { CheckCircle } from "@/components/dashboard/CheckCircle";
@@ -85,7 +85,7 @@ export function TaskItem({
             {task.start_time && (
               <Meta>
                 <Clock size={12} />
-                {task.start_time.slice(0, 5)}
+                {timeRange(task.start_time, task.duration_min)}
               </Meta>
             )}
             {subs.length > 0 && (
