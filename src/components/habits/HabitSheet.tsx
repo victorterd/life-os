@@ -24,7 +24,7 @@ export function HabitSheetProvider({ children }: { children: React.ReactNode }) 
 const TEMPLATES: (NewHabit & { label: string })[] = [
   { label: "💊 Pastilă / supliment", name: "", emoji: "💊", area: "health", kind: "scheduled", times: ["08:00"], detail: "1 capsulă", xp: 10 },
   { label: "🏋️ Sală", name: "Sală", emoji: "🏋️", area: "fitness", kind: "weekly", weekly_target: 4, xp: 40 },
-  { label: "💧 Apă", name: "Apă", emoji: "💧", area: "health", kind: "quantity", target_value: 2.5, unit: "L", step_value: 0.25, xp: 15 },
+  { label: "💧 Apă", name: "Apă", emoji: "💧", area: "health", kind: "quantity", target_value: 3, unit: "L", step_value: 0.25, xp: 15 },
   { label: "❤️ Sex", name: "Sex", emoji: "❤️", area: "personal", kind: "weekly", weekly_target: 3, notify: false, xp: 20 },
   { label: "🧘 Meditație", name: "Meditație", emoji: "🧘", area: "mind", kind: "scheduled", times: ["22:00"], detail: "10 min", xp: 15 },
   { label: "📖 Citit", name: "Citit", emoji: "📖", area: "mind", kind: "quantity", target_value: 20, unit: "pagini", step_value: 5, xp: 15 },
