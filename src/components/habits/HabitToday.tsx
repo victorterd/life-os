@@ -20,6 +20,8 @@ import {
 import { CheckCircle } from "@/components/dashboard/CheckCircle";
 import { XpBurst } from "@/components/dashboard/XpBurst";
 import { useHabitSheet } from "./HabitSheet";
+import { AnimatePresence } from "motion/react";
+import { WaterSheet, isWater } from "./WaterSheet";
 
 type Row = { habit: Habit; slot: string | null };
 
@@ -157,6 +159,7 @@ function QuantityRow({ habit, date }: { habit: Habit; date: string }) {
   const { habitLogs, logHabit, unlogHabit } = useStore();
   const sheet = useHabitSheet();
   const [burst, setBurst] = useState(false);
+  const [water, setWater] = useState(false);
   const area = AREAS[habit.area];
   const value = quantityOn(habitLogs, habit.id, date);
   const target = Number(habit.target_value) || 1;
@@ -195,13 +198,14 @@ function QuantityRow({ habit, date }: { habit: Habit; date: string }) {
         </button>
       )}
       <button
-        onClick={add}
-        aria-label={`Adaugă ${fmtNum(step)} ${habit.unit ?? ""} la ${habit.name}`}
+        onClick={isWater(habit) ? () => setWater(true) : add}
+        aria-label={isWater(habit) ? `Adaugă apă la ${habit.name}` : `Adaugă ${fmtNum(step)} ${habit.unit ?? ""} la ${habit.name}`}
         className="grid size-9 shrink-0 place-items-center rounded-full transition active:scale-90"
         style={{ background: area.soft, color: area.ink }}
       >
         <Plus size={18} strokeWidth={2.4} />
       </button>
+      <AnimatePresence>{water && <WaterSheet habit={habit} date={date} onClose={() => setWater(false)} />}</AnimatePresence>
     </div>
   );
 }
