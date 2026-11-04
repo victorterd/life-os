@@ -51,7 +51,8 @@ export function logsOn(logs: HabitLog[], habitId: string, date: string) {
 }
 
 export function quantityOn(logs: HabitLog[], habitId: string, date: string) {
-  return logsOn(logs, habitId, date).reduce((s, l) => s + (Number(l.value) || 0), 0);
+  const sum = logsOn(logs, habitId, date).reduce((s, l) => s + (Number(l.value) || 0), 0);
+  return Math.round(sum * 1e6) / 1e6;
 }
 
 export function weekCount(logs: HabitLog[], habitId: string, date: string) {

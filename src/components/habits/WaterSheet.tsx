@@ -25,8 +25,9 @@ export function WaterSheet({ habit, date, onClose }: { habit: Habit; date: strin
   const dragging = useRef(false);
 
   const toUnit = (v: number) => (isMl(habit) ? v : v / 1000);
-  const drunkMl = quantityOn(habitLogs, habit.id, date) * (isMl(habit) ? 1 : 1000);
-  const targetMl = (Number(habit.target_value) || 0) * (isMl(habit) ? 1 : 1000);
+  // rotunjim la ml întregi (0,4 + 0,25 L dă 0,6499999… în virgulă mobilă)
+  const drunkMl = Math.round(quantityOn(habitLogs, habit.id, date) * (isMl(habit) ? 1 : 1000));
+  const targetMl = Math.round((Number(habit.target_value) || 0) * (isMl(habit) ? 1 : 1000));
   const after = drunkMl + ml;
   const pct = ml / MAX_ML;
 
@@ -46,7 +47,7 @@ export function WaterSheet({ habit, date, onClose }: { habit: Habit; date: strin
     onClose();
   }
 
-  const fmtMl = (v: number) => (v >= 1000 ? `${fmtNum(v / 1000)} L` : `${v} ml`);
+  const fmtMl = (v: number) => (v >= 1000 ? `${fmtNum(v / 1000)} L` : `${Math.round(v)} ml`);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
